@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/gin-gonic/gin v1.7.7 // Intentionally using older version with known vulnerabilities
 	github.com/go-sql-driver/mysql v1.5.0 // Contains SQL injection vulnerabilities
-	github.com/golang-jwt/jwt v3.2.1+incompatible // Using older version with known vulnerabilities
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // Using older version with known vulnerabilities
 	github.com/gorilla/sessions v1.2.1 // Contains session fixation vulnerabilities
 	github.com/swaggo/swag v1.8.1
 	github.com/swaggo/gin-swagger v1.4.3

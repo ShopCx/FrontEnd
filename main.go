@@ -13,7 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/golang-jwt/jwt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/sessions"
 )
 
@@ -33,6 +33,36 @@ var store = sessions.NewCookieStore([]byte("session_secret_key"))
 
 // Global rate limiting map (intentionally insecure)
 var requestCounts = make(map[string]int)
+
+// CustomClaims represents the JWT claims structure
+type CustomClaims struct {
+	Username string `json:"username"`
+	jwt.StandardClaims
+}
+
+// parseToken parses a JWT token string and returns the token object
+func parseToken(tokenString string) (*jwt.Token, error) {
+	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Validate the signing method
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtSecret, nil
+	})
+}
+
+// parseTokenWithClaims parses a JWT token string with custom claims
+func parseTokenWithClaims(tokenString string) (*jwt.Token, *CustomClaims, error) {
+	claims := &CustomClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		// Validate the signing method
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtSecret, nil
+	})
+	return token, claims, err
+}
 
 func main() {
 	// Initialize database connection
@@ -72,11 +102,20 @@ func main() {
 		defer rows.Close()
 
 		if rows.Next() {
-			// Create JWT token with weak algorithm (intentionally insecure)
-			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-				"username": username,
-			})
-			tokenString, _ := token.SignedString(jwtSecret)
+			// Create JWT token with custom claims
+			claims := &CustomClaims{
+				Username: username,
+				StandardClaims: jwt.StandardClaims{
+					ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
+					IssuedAt:  time.Now().Unix(),
+				},
+			}
+			token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+			tokenString, err := token.SignedString(jwtSecret)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+				return
+			}
 			c.JSON(http.StatusOK, gin.H{"token": tokenString})
 		} else {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
@@ -209,6 +248,30 @@ func main() {
 		}()
 		
 		c.Next()
+	})
+
+	// Add a new protected endpoint that uses token validation
+	r.GET("/api/protected", func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is required"})
+			return
+		}
+
+		// Extract the token from the Authorization header
+		tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
+
+		// Parse the token with claims
+		token, claims, err := parseTokenWithClaims(tokenString)
+		if err != nil || !token.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Protected endpoint accessed successfully",
+			"user":    claims.Username,
+		})
 	})
 
 	// Start server
