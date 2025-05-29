@@ -3,10 +3,13 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -27,6 +30,9 @@ var jwtSecret = []byte("very_secret_key_123")
 
 // Global session store with weak secret (intentionally insecure)
 var store = sessions.NewCookieStore([]byte("session_secret_key"))
+
+// Global rate limiting map (intentionally insecure)
+var requestCounts = make(map[string]int)
 
 func main() {
 	// Initialize database connection
@@ -124,6 +130,85 @@ func main() {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+	})
+
+	// Vulnerable product management endpoints
+	r.POST("/api/products", func(c *gin.Context) {
+		name := c.PostForm("name")
+		price := c.PostForm("price")
+		description := c.PostForm("description")
+
+		// SQL Injection vulnerability in product creation
+		query := fmt.Sprintf("INSERT INTO products (name, price, description) VALUES ('%s', %s, '%s')", 
+			name, price, description)
+		_, err := db.Exec(query)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Product created successfully"})
+	})
+
+	// Vulnerable file upload endpoint
+	r.POST("/api/upload", func(c *gin.Context) {
+		file, header, err := c.Request.FormFile("file")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
+			return
+		}
+		defer file.Close()
+
+		// Path traversal vulnerability
+		filename := header.Filename
+		path := filepath.Join("uploads", filename)
+		
+		out, err := os.Create(path)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer out.Close()
+
+		io.Copy(out, file)
+		c.JSON(http.StatusOK, gin.H{"message": "File uploaded successfully"})
+	})
+
+	// Vulnerable comment system with stored XSS
+	r.POST("/api/comments", func(c *gin.Context) {
+		productID := c.PostForm("product_id")
+		comment := c.PostForm("comment")
+		username := c.PostForm("username")
+
+		// Stored XSS vulnerability
+		query := fmt.Sprintf("INSERT INTO comments (product_id, username, comment) VALUES (%s, '%s', '%s')",
+			productID, username, comment)
+		_, err := db.Exec(query)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Comment added successfully"})
+	})
+
+	// Vulnerable rate limiting implementation
+	r.Use(func(c *gin.Context) {
+		ip := c.ClientIP()
+		requestCounts[ip]++
+		
+		// Rate limiting bypass vulnerability - can be bypassed by changing IP in headers
+		if requestCounts[ip] > 100 {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Rate limit exceeded"})
+			c.Abort()
+			return
+		}
+		
+		// Reset counter after 1 minute (intentionally insecure)
+		go func() {
+			time.Sleep(time.Minute)
+			requestCounts[ip] = 0
+		}()
+		
+		c.Next()
 	})
 
 	// Start server
