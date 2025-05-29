@@ -1,0 +1,149 @@
+openapi: 3.0.0
+info:
+  title: ShopCx Frontend API
+  description: |
+    Frontend API for ShopCx demo application with intentionally vulnerable endpoints.
+    WARNING: This API contains intentional vulnerabilities and should only be used in controlled environments.
+  version: 1.0.0
+  contact:
+    name: Security Team
+    email: security@example.com
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /login:
+    post:
+      summary: User login
+      description: |
+        Vulnerable to:
+        - SQL injection through username and password parameters
+        - Weak JWT algorithm (HS256)
+        - Insecure password handling
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: Username (vulnerable to SQL injection)
+                password:
+                  type: string
+                  description: Password (vulnerable to SQL injection)
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT token (using weak HS256 algorithm)
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/users/{id}:
+    get:
+      summary: Get user profile
+      description: |
+        Vulnerable to:
+        - IDOR (Insecure Direct Object Reference)
+        - SQL injection through user ID
+        - Information disclosure (exposes password)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID (vulnerable to SQL injection)
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  password:
+                    type: string
+                    description: Exposed password (intentionally insecure)
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/delete-user:
+    post:
+      summary: Delete user (undocumented endpoint)
+      description: |
+        Vulnerable to:
+        - Missing authentication
+        - SQL injection through user_id
+        - No authorization checks
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  description: User ID to delete (vulnerable to SQL injection)
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Detailed error message (intentionally vulnerable to information disclosure) 
