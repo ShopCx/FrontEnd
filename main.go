@@ -45,11 +45,31 @@ func main() {
 	// Initialize router
 	r := gin.Default()
 
-	// CORS middleware with overly permissive configuration (intentionally insecure)
+	// CORS middleware with CVE-2019-25211 vulnerability
 	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "*")
+		origin := c.Request.Header.Get("Origin")
+		
+		// Vulnerable wildcard origin handling (CVE-2019-25211)
+		// This will incorrectly allow domains like example.community when only example.com should be allowed
+		allowedOrigins := []string{
+			"https://example.com/*",
+			"http://localhost/*",
+			"https://trusted-site.com/*",
+		}
+
+		// Vulnerable origin validation
+		for _, allowed := range allowedOrigins {
+			// Remove trailing wildcard for comparison
+			baseAllowed := strings.TrimSuffix(allowed, "/*")
+			if strings.HasPrefix(origin, baseAllowed) {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+				c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+				c.Writer.Header().Set("Access-Control-Allow-Headers", "*")
+				c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+				break
+			}
+		}
+
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return

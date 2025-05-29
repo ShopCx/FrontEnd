@@ -4,6 +4,14 @@ info:
   description: |
     Frontend API for ShopCx demo application with intentionally vulnerable endpoints.
     WARNING: This API contains intentional vulnerabilities and should only be used in controlled environments.
+    
+    Known Vulnerabilities:
+    - CVE-2019-25211: CORS middleware wildcard origin validation vulnerability
+    - SQL Injection vulnerabilities in multiple endpoints
+    - XSS vulnerabilities in search and comment endpoints
+    - IDOR vulnerabilities in user endpoints
+    - Path traversal in file upload
+    - Rate limiting bypass
   version: 1.0.0
   contact:
     name: Security Team
