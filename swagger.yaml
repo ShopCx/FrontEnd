@@ -4,6 +4,14 @@ info:
   description: |
     Frontend API for ShopCx demo application with intentionally vulnerable endpoints.
     WARNING: This API contains intentional vulnerabilities and should only be used in controlled environments.
+    
+    Known Vulnerabilities:
+    - CVE-2025-30204: JWT resource consumption vulnerability
+    - SQL Injection vulnerabilities in multiple endpoints
+    - XSS vulnerabilities in search and comment endpoints
+    - IDOR vulnerabilities in user endpoints
+    - Path traversal in file upload
+    - Rate limiting bypass
   version: 1.0.0
   contact:
     name: Security Team
@@ -233,6 +241,41 @@ paths:
       responses:
         '200':
           description: Comment added successfully
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/verify-token:
+    get:
+      summary: Verify JWT token
+      description: |
+        Vulnerable to:
+        - CVE-2025-30204: Resource consumption through malicious JWT tokens
+        - No input validation for token format
+        - Uses vulnerable ParseUnverified function
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Token verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  claims:
+                    type: object
+        '401':
+          description: Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Server error
           content:

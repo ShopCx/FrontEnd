@@ -57,7 +57,7 @@ func main() {
 		c.Next()
 	})
 
-	// Vulnerable login endpoint with SQL injection
+	// Vulnerable login endpoint with SQL injection and JWT vulnerability
 	r.POST("/login", func(c *gin.Context) {
 		username := c.PostForm("username")
 		password := c.PostForm("password")
@@ -80,6 +80,38 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"token": tokenString})
 		} else {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		}
+	})
+
+	// Add new endpoint to demonstrate CVE-2025-30204
+	r.GET("/api/verify-token", func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "No authorization header"})
+			return
+		}
+
+		// Vulnerable to CVE-2025-30204 - No validation of token format
+		// This will cause excessive memory allocations with malicious input
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		
+		// Using ParseUnverified which is vulnerable to the resource consumption attack
+		token, err := jwt.ParseUnverified(tokenString, func(token *jwt.Token) (interface{}, error) {
+			return jwtSecret, nil
+		})
+
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			return
+		}
+
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "Token verified",
+				"claims": claims,
+			})
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
 		}
 	})
 
