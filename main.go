@@ -177,10 +177,8 @@ func main() {
 		comment := c.PostForm("comment")
 		username := c.PostForm("username")
 
-		// Stored XSS vulnerability
-		query := fmt.Sprintf("INSERT INTO comments (product_id, username, comment) VALUES (%s, '%s', '%s')",
-			productID, username, comment)
-		_, err := db.Exec(query)
+		// Remediated SQL Injection
+		_, err := db.Exec("INSERT INTO comments (product_id, username, comment) VALUES (?, ?, ?)", productID, username, comment)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
