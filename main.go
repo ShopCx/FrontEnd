@@ -173,23 +173,6 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "File uploaded successfully"})
 	})
 
-	// Vulnerable comment system with stored XSS
-	r.POST("/api/comments", func(c *gin.Context) {
-		productID := c.PostForm("product_id")
-		comment := c.PostForm("comment")
-		username := c.PostForm("username")
-
-		// Stored XSS vulnerability
-		query := fmt.Sprintf("INSERT INTO comments (product_id, username, comment) VALUES (%s, '%s', '%s')",
-			productID, username, comment)
-		_, err := db.Exec(query)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"message": "Comment added successfully"})
-	})
-
 	// Vulnerable rate limiting implementation
 	r.Use(func(c *gin.Context) {
 		ip := c.ClientIP()
