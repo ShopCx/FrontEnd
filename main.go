@@ -87,8 +87,8 @@ func main() {
 	r.GET("/api/users/:id", func(c *gin.Context) {
 		userID := c.Param("id")
 		// IDOR vulnerability (intentionally insecure)
-		query := fmt.Sprintf("SELECT * FROM users WHERE id=%s", userID)
-		rows, err := db.Query(query)
+		// Remediated SQL Injection
+		rows, err := db.Query("SELECT * FROM users WHERE id=?", userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -123,8 +123,8 @@ func main() {
 	r.POST("/admin/delete-user", func(c *gin.Context) {
 		userID := c.PostForm("user_id")
 		// No authentication check (intentionally insecure)
-		query := fmt.Sprintf("DELETE FROM users WHERE id=%s", userID)
-		_, err := db.Exec(query)
+		// Remediated SQL Injection
+		_, err := db.Exec("DELETE FROM users WHERE id=?", userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -138,10 +138,8 @@ func main() {
 		price := c.PostForm("price")
 		description := c.PostForm("description")
 
-		// SQL Injection vulnerability in product creation
-		query := fmt.Sprintf("INSERT INTO products (name, price, description) VALUES ('%s', %s, '%s')", 
-			name, price, description)
-		_, err := db.Exec(query)
+		// Remediated SQL Injection in product creation
+		_, err := db.Exec("INSERT INTO products (name, price, description) VALUES (?, ?, ?)", name, price, description)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
