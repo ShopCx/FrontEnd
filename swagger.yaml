@@ -173,38 +173,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /api/upload:
-    post:
-      summary: Upload file
-      description: |
-        Vulnerable to:
-        - Path traversal through filename
-        - No file type validation
-        - No size limits
-        - No authentication required
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: File to upload (vulnerable to path traversal)
-      responses:
-        '200':
-          description: File uploaded successfully
-        '400':
-          description: No file uploaded
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
 components:
   schemas:
     Error:
