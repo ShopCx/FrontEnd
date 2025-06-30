@@ -1,4 +1,4 @@
-# ShopCx Frontend Service
+# ShopCx FrontEnd Service
 
 A Go-based frontend service for the ShopCx demo application with intentionally vulnerable endpoints.
 
