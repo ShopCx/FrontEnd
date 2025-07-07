@@ -1,0 +1,26 @@
+# Binaries
+main
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Output of go build
+/build/
+
+# Dependency directories (vendor/)
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log 
