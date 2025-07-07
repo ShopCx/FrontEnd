@@ -17,7 +17,6 @@ import (
 	"github.com/gorilla/sessions"
 )
 
-// Hardcoded database credentials (intentionally insecure)
 const (
 	dbUser     = "admin"
 	dbPassword = "admin123"
@@ -25,13 +24,10 @@ const (
 	dbName     = "shopcx"
 )
 
-// Hardcoded JWT secret (intentionally insecure)
 var jwtSecret = []byte("very_secret_key_123")
 
-// Global session store with weak secret (intentionally insecure)
 var store = sessions.NewCookieStore([]byte("session_secret_key"))
 
-// Global rate limiting map (intentionally insecure)
 var requestCounts = make(map[string]int)
 
 func main() {
@@ -45,7 +41,6 @@ func main() {
 	// Initialize router
 	r := gin.Default()
 
-	// CORS middleware with overly permissive configuration (intentionally insecure)
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -57,12 +52,10 @@ func main() {
 		c.Next()
 	})
 
-	// Vulnerable login endpoint with SQL injection
 	r.POST("/login", func(c *gin.Context) {
 		username := c.PostForm("username")
 		password := c.PostForm("password")
 
-		// SQL Injection vulnerability (intentionally insecure)
 		query := fmt.Sprintf("SELECT * FROM users WHERE username='%s' AND password='%s'", username, password)
 		rows, err := db.Query(query)
 		if err != nil {
@@ -72,7 +65,6 @@ func main() {
 		defer rows.Close()
 
 		if rows.Next() {
-			// Create JWT token with weak algorithm (intentionally insecure)
 			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 				"username": username,
 			})
@@ -83,11 +75,8 @@ func main() {
 		}
 	})
 
-	// Vulnerable user profile endpoint with IDOR
 	r.GET("/api/users/:id", func(c *gin.Context) {
 		userID := c.Param("id")
-		// IDOR vulnerability (intentionally insecure)
-		// Remediated SQL Injection
 		rows, err := db.Query("SELECT * FROM users WHERE id=?", userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -100,7 +89,7 @@ func main() {
 				ID       int    `json:"id"`
 				Username string `json:"username"`
 				Email    string `json:"email"`
-				Password string `json:"password"` // Exposing password (intentionally insecure)
+				Password string `json:"password"`
 			}
 			rows.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
 			c.JSON(http.StatusOK, user)
@@ -109,21 +98,15 @@ func main() {
 		}
 	})
 
-	// Vulnerable search endpoint with XSS
-	// Intentionally undocumented in Swagger: Internal search functionality
 	r.GET("/search", func(c *gin.Context) {
 		query := c.Query("q")
-		// XSS vulnerability (intentionally insecure)
 		c.HTML(http.StatusOK, "search.html", gin.H{
 			"query": query,
 		})
 	})
 
-	// Undocumented admin endpoint (intentionally hidden)
 	r.POST("/admin/delete-user", func(c *gin.Context) {
 		userID := c.PostForm("user_id")
-		// No authentication check (intentionally insecure)
-		// Remediated SQL Injection
 		_, err := db.Exec("DELETE FROM users WHERE id=?", userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -132,13 +115,11 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 	})
 
-	// Vulnerable product management endpoints
 	r.POST("/api/products", func(c *gin.Context) {
 		name := c.PostForm("name")
 		price := c.PostForm("price")
 		description := c.PostForm("description")
 
-		// Remediated SQL Injection in product creation
 		_, err := db.Exec("INSERT INTO products (name, price, description) VALUES (?, ?, ?)", name, price, description)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -147,7 +128,6 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "Product created successfully"})
 	})
 
-	// Vulnerable file upload endpoint
 	r.POST("/api/upload", func(c *gin.Context) {
 		file, header, err := c.Request.FormFile("file")
 		if err != nil {
@@ -156,7 +136,6 @@ func main() {
 		}
 		defer file.Close()
 
-		// Path traversal vulnerability
 		filename := header.Filename
 		path := filepath.Join("uploads", filename)
 		
@@ -171,19 +150,16 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "File uploaded successfully"})
 	})
 
-	// Vulnerable rate limiting implementation
 	r.Use(func(c *gin.Context) {
 		ip := c.ClientIP()
 		requestCounts[ip]++
 		
-		// Rate limiting bypass vulnerability - can be bypassed by changing IP in headers
 		if requestCounts[ip] > 100 {
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Rate limit exceeded"})
 			c.Abort()
 			return
 		}
 		
-		// Reset counter after 1 minute (intentionally insecure)
 		go func() {
 			time.Sleep(time.Minute)
 			requestCounts[ip] = 0

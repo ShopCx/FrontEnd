@@ -2,8 +2,7 @@ openapi: 3.0.0
 info:
   title: ShopCx Frontend API
   description: |
-    Frontend API for ShopCx demo application with intentionally vulnerable endpoints.
-    WARNING: This API contains intentional vulnerabilities and should only be used in controlled environments.
+    Frontend API for ShopCx demo application.
   version: 1.0.0
   contact:
     name: Security Team
@@ -17,11 +16,7 @@ paths:
   /login:
     post:
       summary: User login
-      description: |
-        Vulnerable to:
-        - SQL injection through username and password parameters
-        - Weak JWT algorithm (HS256)
-        - Insecure password handling
+      description: Authenticate user and return JWT token.
       requestBody:
         required: true
         content:
@@ -31,10 +26,10 @@ paths:
               properties:
                 username:
                   type: string
-                  description: Username (vulnerable to SQL injection)
+                  description: Username
                 password:
                   type: string
-                  description: Password (vulnerable to SQL injection)
+                  description: Password
       responses:
         '200':
           description: Login successful
@@ -45,7 +40,7 @@ paths:
                 properties:
                   token:
                     type: string
-                    description: JWT token (using weak HS256 algorithm)
+                    description: JWT token
         '401':
           description: Invalid credentials
           content:
@@ -62,18 +57,14 @@ paths:
   /api/users/{id}:
     get:
       summary: Get user profile
-      description: |
-        Vulnerable to:
-        - IDOR (Insecure Direct Object Reference)
-        - SQL injection through user ID
-        - Information disclosure (exposes password)
+      description: Retrieve user profile information.
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: string
-          description: User ID (vulnerable to SQL injection)
+          description: User ID
       responses:
         '200':
           description: User profile retrieved successfully
@@ -90,7 +81,7 @@ paths:
                     type: string
                   password:
                     type: string
-                    description: Exposed password (intentionally insecure)
+                    description: User password
         '404':
           description: User not found
           content:
@@ -107,11 +98,7 @@ paths:
   /admin/delete-user:
     post:
       summary: Delete user (undocumented endpoint)
-      description: |
-        Vulnerable to:
-        - Missing authentication
-        - SQL injection through user_id
-        - No authorization checks
+      description: Delete a user account.
       requestBody:
         required: true
         content:
@@ -121,7 +108,7 @@ paths:
               properties:
                 user_id:
                   type: string
-                  description: User ID to delete (vulnerable to SQL injection)
+                  description: User ID to delete
       responses:
         '200':
           description: User deleted successfully
@@ -142,11 +129,7 @@ paths:
   /api/products:
     post:
       summary: Create new product
-      description: |
-        Vulnerable to:
-        - SQL injection in product name, price, and description
-        - No input validation
-        - No authentication required
+      description: Create a new product in the inventory.
       requestBody:
         required: true
         content:
@@ -156,13 +139,13 @@ paths:
               properties:
                 name:
                   type: string
-                  description: Product name (vulnerable to SQL injection)
+                  description: Product name
                 price:
                   type: string
-                  description: Product price (vulnerable to SQL injection)
+                  description: Product price
                 description:
                   type: string
-                  description: Product description (vulnerable to SQL injection)
+                  description: Product description
       responses:
         '200':
           description: Product created successfully
@@ -180,4 +163,4 @@ components:
       properties:
         error:
           type: string
-          description: Detailed error message (intentionally vulnerable to information disclosure) 
+          description: Detailed error message 
