@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Results - ShopCx</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .search-container { max-width: 800px; margin: 0 auto; }
+        .search-form { margin-bottom: 20px; }
+        .search-input { padding: 10px; width: 300px; border: 1px solid #ccc; }
+        .search-button { padding: 10px 20px; background: #007cba; color: white; border: none; cursor: pointer; }
+        .results { margin-top: 20px; }
+        .result-item { padding: 15px; border-bottom: 1px solid #eee; }
+        .no-results { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <h1>ShopCx Search</h1>
+        
+        <div class="search-form">
+            <form method="GET" action="/search">
+                <input type="text" name="q" value="{{.query}}" placeholder="Search products..." class="search-input">
+                <button type="submit" class="search-button">Search</button>
+            </form>
+        </div>
+        
+        <div class="results">
+            {{if .query}}
+                <h2>Search Results for: "{{.query}}"</h2>
+                <div class="result-item">
+                    <h3>Sample Product</h3>
+                    <p>This is a sample search result for "{{.query}}"</p>
+                    <p><strong>Price:</strong> $19.99</p>
+                </div>
+                <div class="result-item">
+                    <h3>Another Product</h3>
+                    <p>Another sample search result matching "{{.query}}"</p>
+                    <p><strong>Price:</strong> $29.99</p>
+                </div>
+            {{else}}
+                <p class="no-results">Enter a search term above to find products.</p>
+            {{end}}
+        </div>
+    </div>
+</body>
+</html>
